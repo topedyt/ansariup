@@ -1,0 +1,63 @@
+name: UP_Special
+description: An app for UP Special exam preparation.
+publish_to: 'none'
+version: 1.0.1+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 1. State Management (Best for caching & performance)
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # 2. Backend (The Supabase Connection)
+  supabase_flutter: ^2.12.0
+
+  # 3. UI & Typography (For the "Sleek" look)
+  google_fonts: ^6.2.1   # For 'Hind' (Hindi) & 'Teko' (Headers)
+  flutter_animate: ^4.5.0 # For smooth entry animations
+  cached_network_image: ^3.3.1 # To load "Fact of the Day" images efficiently
+
+  # 4. Navigation
+  go_router: ^13.2.0
+
+  # 5. Local Database (For offline "Read Once" capability)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  slider_captcha: ^1.0.0 # Or use a webview for ReCaptcha
+  razorpay_flutter: ^1.4.0
+  share_plus: ^12.0.1
+  screenshot: ^3.0.0
+  url_launcher: ^6.2.0
+  path_provider: ^2.1.5
+  flutter_dotenv: ^6.0.0
+  image_picker: ^1.0.7
+  google_sign_in: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Code generation for Riverpod & Hive
+  build_runner: ^2.4.8
+  intl: ^0.19.0
+  riverpod_generator: ^2.4.0
+  hive_generator: ^2.0.1
+  confetti: ^0.7.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icons/icon.png"
+  adaptive_icon_background: "#FFFFFF" # Background color for Android 
+  adaptive_icon_foreground: "assets/icons/icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env

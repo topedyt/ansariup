@@ -1,0 +1,42 @@
+gitignore
+# Miscellaneous
+.DS_Store
+.env
+.idea/
+.vscode/
+
+# Build artifacts
+*.apk
+*.ap_
+*.aab
+*.so
+*.aar
+*.iml
+build/
+.gradle/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+.packages
+.fvm/
+
+# IDE-specific
+.idea/
+.vscode/
+*.iws
+
+# Test and coverage
+.nyc_output/
+.coverage
+coverage/
+
+# Generated files
+# Flutter/Dart
+*.g.dart
+*.freezed.dart
+*.gr.dart
+test/golden_*.png
+
+# Firebase
+.firebase/
+firebase-debug.log
