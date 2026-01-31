@@ -1,42 +1,49 @@
-gitignore
 # Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
 .DS_Store
-.env
+
+# IntelliJ
 .idea/
+*.iml
+
+# Visual Studio Code
 .vscode/
 
-# Build artifacts
-*.apk
-*.ap_
-*.aab
-*.so
-*.aar
-*.iml
-build/
-.gradle/
+# Android
+/android/app/build/
+/android/.gradle/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+
+# iOS
+/ios/Pods/
+/ios/Flutter/App.framework
+/ios/Flutter/engine
+/ios/Flutter/flutter_assets
+/ios/Flutter/pod_install_and_build.sh
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/LastUpgradeCheck.txt
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+/ios/Runner.xcworkspace/
+/ios/Runner.xcodeproj/project.xcworkspace/
+/ios/Runner.xcodeproj/xcuserdata/
+
+# Flutter
 .flutter-plugins
 .flutter-plugins-dependencies
+.pub-cache/
 .dart_tool/
-.packages
-.fvm/
+build/
 
-# IDE-specific
-.idea/
-.vscode/
-*.iws
-
-# Test and coverage
-.nyc_output/
-.coverage
-coverage/
-
-# Generated files
-# Flutter/Dart
-*.g.dart
-*.freezed.dart
-*.gr.dart
-test/golden_*.png
-
-# Firebase
-.firebase/
-firebase-debug.log
+# Large files
+*.apk
+*.zip
+*.aab
+*.ipa
+*.base64

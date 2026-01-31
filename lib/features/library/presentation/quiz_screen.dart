@@ -301,6 +301,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
+                    decoration: TextDecoration.none
                     letterSpacing: 1),
               ),
               const SizedBox(height: 8),
@@ -315,6 +316,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none
                       color: Colors.white),
                 ),
               )
