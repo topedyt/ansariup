@@ -26,8 +26,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   bool get _showPaymentUi => kIsWeb;
 
   // 🔗 REPLACE THIS with your actual Vercel link
-  final String _websiteUrl =
-      "https://up-special-j68ktnypb-topeds-projects-cf77eb10.vercel.app";
+  final String _websiteUrl = "https://up-special.vercel.app/";
 
   bool _isUploading = false;
   bool _isLoadingData = true;
