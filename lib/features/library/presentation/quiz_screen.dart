@@ -2,8 +2,8 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui'; // For blur
-import 'dart:math'; // For confetti star shape
+import 'dart:ui'; // ✅ Required for High Quality Blur
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter/material.dart';
@@ -15,6 +15,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:confetti/confetti.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../library_providers.dart';
 import '../../../core/theme/clay_kit.dart';
@@ -84,14 +85,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSharing = false;
 
-  // ✨ CONFETTI CONTROLLER
   late ConfettiController _confettiController;
 
-  // 👑 ADMIN LOGIC
   final List<String> adminEmails = const [
     "ansarisalik25@gmail.com",
     "ansariplayer25@gmail.com"
   ];
+
+  // 🔗 PAYMENT URL
+  final String _paymentUrl =
+      "https://up-special-ngfksp18y-topeds-projects-cf77eb10.vercel.app";
 
   bool get _isAdmin {
     final user = Supabase.instance.client.auth.currentUser;
@@ -101,9 +104,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(
-        duration: const Duration(seconds: 1)); // Init Confetti
-
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 2));
     if (widget.mode == 'test') {
       _secondsRemaining = widget.questionCount * 45;
       _startTimer();
@@ -139,7 +141,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     ref.refresh(userRankProvider);
   }
 
-  // --- 🔒 TEST MODE LIMIT DIALOG ---
+  // --- 🔒 DIALOGS ---
   void _showTestLimitDialog(
       BuildContext context, int available, int requested) {
     final theme = ref.read(appThemeProvider);
@@ -158,7 +160,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         color: theme.textColor, fontWeight: FontWeight.bold)),
               ]),
               content: Text(
-                "There are only $available free questions available, so a $requested question quiz can't be started.\n\nPlease try starting a quiz with $available questions instead.",
+                "There are only $available free questions available. Please try starting a quiz with $available questions instead.",
                 style: TextStyle(color: theme.subTextColor, fontSize: 16),
               ),
               actions: [
@@ -176,7 +178,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             ));
   }
 
-  // --- 👑 ADMIN EDIT DIALOG ---
   void _showEditDialog(int questionId, String field, String currentValue) {
     final controller = TextEditingController(text: currentValue);
     final theme = ref.read(appThemeProvider);
@@ -191,14 +192,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 controller: controller,
                 maxLines: null,
                 style: TextStyle(color: theme.textColor),
-                decoration: InputDecoration(
-                  hintText: "Enter new text...",
-                  hintStyle: TextStyle(color: theme.subTextColor),
-                  enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: theme.subTextColor)),
-                  focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent)),
-                ),
               ),
               actions: [
                 TextButton(
@@ -206,14 +199,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     child: const Text("Cancel")),
                 TextButton(
                     onPressed: () async {
-                      final newValue = controller.text.trim();
-                      if (newValue.isNotEmpty) {
+                      if (controller.text.isNotEmpty) {
                         await ref
                             .read(supabaseClientProvider)
                             .from('questions')
-                            .update({field: newValue}).eq('id', questionId);
-
-                        // ignore: unused_result
+                            .update({field: controller.text.trim()}).eq(
+                                'id', questionId);
                         ref.refresh(smartQuestionsProvider(widget.chapterId));
                         if (mounted) {
                           Navigator.pop(context);
@@ -222,24 +213,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         }
                       }
                     },
-                    child: const Text("Save",
-                        style: TextStyle(
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.bold))),
+                    child: const Text("Save")),
               ],
             ));
   }
 
-  // --- ✨ REFACTORED: GLASSMORPHIC FEEDBACK (Correct/Wrong) ---
+  // --- ✨ HIGH QUALITY FEEDBACK CARDS (Restored Blur & Gradients) ---
   void _showCenterFeedback(bool isCorrect) {
-    // Colors
+    // 🔥 Restored the "Dope" Deep Gradients
     final Color mainColor =
-        isCorrect ? const Color(0xFF00C853) : const Color(0xFFFF1744);
-    final Color bgGradientStart =
-        isCorrect ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2);
-    final Color bgGradientEnd = isCorrect
-        ? Colors.green.withOpacity(0.05)
-        : Colors.red.withOpacity(0.05);
+        isCorrect ? const Color(0xFF00E676) : const Color(0xFFFF1744);
+
+    // Richer, deeper gradients for premium look
+    final List<Color> bgGradient = isCorrect
+        ? [
+            const Color(0xFF00C853).withOpacity(0.9),
+            const Color(0xFF1B5E20).withOpacity(0.95)
+          ] // Bright Green -> Deep Forest
+        : [
+            const Color(0xFFFF1744).withOpacity(0.9),
+            const Color(0xFFB71C1C).withOpacity(0.95)
+          ]; // Bright Red -> Deep Crimson
+
     final IconData icon =
         isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded;
     final String text = isCorrect ? "Awesome!" : "Incorrect";
@@ -247,89 +242,85 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black12,
+      barrierColor: Colors.black12, // Subtle background dim
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (context, anim, secondaryAnim, child) {
-        // Elastic pop animation
         final curvedValue = Curves.elasticOut.transform(anim.value);
         final scale = curvedValue.clamp(0.0, 1.2);
 
-        // 1. Define Glass Card Content
+        // 💎 The High Quality Card
         Widget cardContent = Container(
-          width: 220,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          width: 260,
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: kIsWeb
-                  ? [
-                      Colors.black.withOpacity(0.85),
-                      Colors.black.withOpacity(0.8)
-                    ] // Web Fallback
-                  : [bgGradientStart, bgGradientEnd], // Mobile Glass
-            ),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: bgGradient),
             borderRadius: BorderRadius.circular(30),
-            border:
-                Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+            border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5), // Glass border
             boxShadow: [
               BoxShadow(
-                color: mainColor.withOpacity(0.3),
-                blurRadius: 30,
-                spreadRadius: 5,
-                offset: const Offset(0, 10),
-              )
+                  color: mainColor.withOpacity(0.5),
+                  blurRadius: 40,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 15))
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Glowing Icon
+              // Glowing Icon Background
               Container(
                 decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
                   BoxShadow(
-                      color: mainColor.withOpacity(0.6),
-                      blurRadius: 20,
-                      spreadRadius: 2)
+                      color: Colors.black26, blurRadius: 20, spreadRadius: 5)
                 ]),
-                child: Icon(icon, size: 50, color: Colors.white),
+                child: Icon(icon, size: 70, color: Colors.white),
               ),
-              const SizedBox(height: 16),
-              Text(
-                text,
-                style: GoogleFonts.outfit(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    decoration: TextDecoration.none
-                    letterSpacing: 1),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
+              Text(text,
+                  style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      decoration: TextDecoration.none,
+                      shadows: [
+                        Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 2),
+                            blurRadius: 4)
+                      ])),
+              const SizedBox(height: 12),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12)),
+                    color: Colors.black.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.1))),
                 child: Text(
                   isCorrect ? "+2.0 XP" : "-0.5 Penalty",
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.none
-                      color: Colors.white),
+                      color: Colors.white,
+                      decoration: TextDecoration.none),
                 ),
               )
             ],
           ),
         );
 
-        // 2. Apply Blur (Mobile Only)
+        // 💎 Apply Blur Effect (BackdropFilter) for Glassmorphism
         if (!kIsWeb) {
           cardContent = ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
               child: cardContent,
             ),
           );
@@ -350,7 +341,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     });
   }
 
-  // --- 🏏 REFACTORED: MILESTONE CELEBRATION ---
+  // --- 🏏 HIGH QUALITY MILESTONE CARDS ---
   void _triggerCricketMilestone(int streak) {
     String title = "";
     String sub = "";
@@ -360,27 +351,27 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (streak == 4) {
       title = "FOUR! 🏏";
       sub = "Boundary Hit!";
-      gradientColors = [const Color(0xFF4CAF50), const Color(0xFF00E676)];
+      gradientColors = [const Color(0xFF1B5E20), const Color(0xFF69F0AE)];
       icon = Icons.sports_cricket_rounded;
     } else if (streak == 6) {
       title = "SIXER! 🚀";
       sub = "Out of the Park!";
-      gradientColors = [const Color(0xFF673AB7), const Color(0xFFB388FF)];
+      gradientColors = [const Color(0xFF311B92), const Color(0xFFB388FF)];
       icon = Icons.rocket_launch_rounded;
     } else if (streak == 10) {
-      title = "WICKET! ☝️";
+      title = "Power!";
       sub = "Unstoppable!";
-      gradientColors = [const Color(0xFFD50000), const Color(0xFFFF5252)];
+      gradientColors = [const Color(0xFFB71C1C), const Color(0xFFFF8A80)];
       icon = Icons.sports_baseball_rounded;
     } else if (streak == 50) {
       title = "FIFTY! ⚔️";
       sub = "Half Century!";
-      gradientColors = [const Color(0xFF0D47A1), const Color(0xFF42A5F5)];
+      gradientColors = [const Color(0xFF0D47A1), const Color(0xFF82B1FF)];
       icon = Icons.shield_rounded;
     } else if (streak == 100) {
       title = "CENTURY! 👑";
       sub = "Legendary!";
-      gradientColors = [const Color(0xFFFF6F00), const Color(0xFFFFD700)];
+      gradientColors = [const Color(0xFFFF6F00), const Color(0xFFFFE57F)];
       icon = Icons.emoji_events_rounded;
     } else {
       return;
@@ -392,112 +383,110 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: "Milestone",
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withOpacity(0.7), // Cinematic dim
       transitionDuration: const Duration(milliseconds: 600),
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (context, anim, secondaryAnim, child) {
-        final curvedValue = Curves.elasticOut.transform(anim.value) - 1.0;
-        final scale = 1.0 + curvedValue;
+        final curvedValue = Curves.elasticOut.transform(anim.value);
+        final scale = curvedValue.clamp(0.0, 1.2);
 
-        // Glass Card
         Widget cardContent = Container(
-          width: 300,
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 30),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: kIsWeb
-                  ? [
-                      Colors.black.withOpacity(0.9),
-                      Colors.black.withOpacity(0.8)
-                    ]
-                  : [
-                      Colors.white.withOpacity(0.25),
-                      Colors.white.withOpacity(0.1)
-                    ],
-            ),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  gradientColors.first.withOpacity(0.95),
+                  gradientColors.last.withOpacity(0.9)
+                ]),
             borderRadius: BorderRadius.circular(30),
-            border:
-                Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+            border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15))
+                  color: gradientColors.first.withOpacity(0.6),
+                  blurRadius: 50,
+                  spreadRadius: 5)
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Transform.rotate(
-                angle: anim.value * 0.2,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: gradientColors),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                            color: gradientColors.first.withOpacity(0.6),
-                            blurRadius: 30,
-                            offset: const Offset(0, 8))
-                      ],
-                      border: Border.all(color: Colors.white, width: 4)),
-                  child: Icon(icon, size: 60, color: Colors.white),
-                ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 15,
+                          offset: Offset(0, 5))
+                    ]),
+                child: Icon(icon, size: 60, color: Colors.white),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
               Text(title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
+                  style: GoogleFonts.blackOpsOne(
+                      fontSize: 40,
                       color: Colors.white,
+                      decoration: TextDecoration.none,
                       letterSpacing: 2,
                       shadows: [
                         const Shadow(
-                            color: Colors.black26,
+                            color: Colors.black45,
                             blurRadius: 10,
                             offset: Offset(0, 4))
                       ])),
-              const SizedBox(height: 10),
-              Text(sub.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text(sub.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.white,
+                        decoration: TextDecoration.none,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5)),
+              ),
             ],
           ),
         );
 
+        // 💎 Apply Blur for Milestone
         if (!kIsWeb) {
           cardContent = ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: cardContent,
             ),
           );
         }
 
         return Transform.scale(
-          scale: scale.clamp(0.0, 1.5),
+          scale: scale,
           child: Center(
             child: Stack(
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
+                // Glow effect behind
                 Container(
-                  width: 250,
-                  height: 250,
+                  width: 300,
+                  height: 300,
                   decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
                     BoxShadow(
                         color: gradientColors.last.withOpacity(0.5),
-                        blurRadius: 80,
-                        spreadRadius: 20)
+                        blurRadius: 100,
+                        spreadRadius: 30)
                   ]),
                 ),
                 cardContent,
@@ -508,12 +497,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       },
     );
 
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
     });
   }
 
-  // --- LOGIC: HANDLE TAP (Fixing Overlap Issue) ---
   Future<void> _handleOptionTap(
       int qId, String opt, String correct, bool isTest) async {
     if (isTest) {
@@ -535,32 +523,29 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       _selectedOption = opt;
       _isAnswered = true;
       _showExplanation = true;
-
       if (isCorrect) {
         _streakCount++;
-        // 🚀 LOGIC FIX: If milestone hit, ONLY show milestone. Else show normal feedback.
         if ([4, 6, 10, 50, 100].contains(_streakCount)) {
           _triggerCricketMilestone(_streakCount);
         } else {
-          if (mounted) _showCenterFeedback(true);
+          _showCenterFeedback(true);
         }
       } else {
         _streakCount = 0;
-        if (mounted) _showCenterFeedback(false);
+        _showCenterFeedback(false);
       }
     });
 
-    final points = isCorrect ? 2.0 : -0.5;
     try {
+      final points = isCorrect ? 2.0 : -0.5;
       await ref.read(supabaseClientProvider).rpc('update_career_points',
           params: {'delta': points, 'q_id': qId, 'correct': isCorrect});
     } catch (e) {
-      // Error handling
+      debugPrint("Error updating score: $e");
     }
   }
 
-  // ... [BUILD METHOD & OTHER HELPERS REMAIN STANDARD BUT INCLUDED BELOW] ...
-
+  // --- 🏗️ BUILD METHOD ---
   @override
   Widget build(BuildContext context) {
     final questionsAsync = ref.watch(smartQuestionsProvider(widget.chapterId));
@@ -574,7 +559,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. CONTENT LAYER
           MeshBackground(
             theme: theme,
             child: SafeArea(
@@ -604,22 +588,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         final questions = isTestMode
                             ? allQuestions.take(widget.questionCount).toList()
                             : allQuestions;
+
                         if (questions.isEmpty)
                           return const Center(
                               child: Text("No questions found."));
 
+                        // 🔴 SAFEGUARD: END OF QUIZ CHECK
                         if (_currentIndex >= questions.length) {
-                          final trueTotal =
-                              totalCountAsync.value ?? questions.length;
-                          final hiddenQuestions = trueTotal - questions.length;
-                          if (hiddenQuestions > 0 && !isPro && !isTestMode) {
-                            return _buildPaywallView(theme, hiddenQuestions);
-                          }
-                          if (!_isSubmitted && !isTestMode) {
-                            Future.microtask(() => _submitTest(questions));
-                          }
-                          return const Center(
-                              child: CircularProgressIndicator());
+                          return _buildEndOfQuizState(questions,
+                              totalCountAsync, isPro, isTestMode, theme);
                         }
 
                         final question = questions[_currentIndex];
@@ -657,6 +634,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                             color: theme.subTextColor,
                                             size: 20)),
                                   ),
+                                  // 🏆 LOGO & BRANDING UPDATE
+                                  Row(children: [
+                                    Image.asset('assets/icons/icon.png',
+                                        height:
+                                            28), // ✅ Replaced Icon with Image
+                                    const SizedBox(width: 10),
+                                    Text("UP Special by Toped", // ✅ Full Text
+                                        style: GoogleFonts.inter(
+                                            // ✅ Bold Inter Font
+                                            color: theme.textColor,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold)),
+                                  ]),
                                   if (isTestMode)
                                     ClayContainer(
                                         height: 40,
@@ -665,7 +655,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                             ? Colors.redAccent.withOpacity(0.1)
                                             : theme.cardColor,
                                         emboss: true,
-                                        spread: 2,
                                         child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 16),
@@ -682,32 +671,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                   style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color:
-                                                          _secondsRemaining < 60
-                                                              ? Colors.red
-                                                              : theme.textColor,
-                                                      fontFamily: 'monospace'))
+                                                      color: _secondsRemaining <
+                                                              60
+                                                          ? Colors.red
+                                                          : theme.textColor))
                                             ])))
                                   else
-                                    Expanded(
-                                        child: Column(children: [
-                                      titleAsync.when(
-                                          data: (t) => Text(t,
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: theme.textColor),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis),
-                                          loading: () => const SizedBox(),
-                                          error: (_, __) => const SizedBox()),
-                                      Text(
-                                          "Q ${_currentIndex + 1} / $displayTotal",
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: theme.subTextColor))
-                                    ])),
-                                  const SizedBox(width: 44),
+                                    const SizedBox(width: 44),
                                 ],
                               ),
                             ),
@@ -716,26 +686,37 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 24),
-                              child: ClayContainer(
-                                  height: 10,
-                                  width: double.infinity,
-                                  borderRadius: 5,
-                                  color: theme.cardColor,
-                                  emboss: true,
-                                  child: FractionallySizedBox(
-                                      alignment: Alignment.centerLeft,
-                                      widthFactor: progress,
-                                      child: Container(
-                                          decoration: BoxDecoration(
-                                              color: isTestMode
-                                                  ? Colors.orangeAccent
-                                                  : theme.accentColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(5))))),
+                              child: Column(children: [
+                                ClayContainer(
+                                    height: 10,
+                                    width: double.infinity,
+                                    borderRadius: 5,
+                                    color: theme.cardColor,
+                                    emboss: true,
+                                    child: FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: progress,
+                                        child: Container(
+                                            decoration: BoxDecoration(
+                                                color: isTestMode
+                                                    ? Colors.orangeAccent
+                                                    : theme.accentColor,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        5))))),
+                                const SizedBox(height: 6),
+                                Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                        "Question ${_currentIndex + 1} of $displayTotal",
+                                        style: TextStyle(
+                                            color: theme.subTextColor,
+                                            fontSize: 11)))
+                              ]),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
 
-                            // CONTENT
+                            // SCROLLABLE CONTENT
                             Expanded(
                               child: SingleChildScrollView(
                                 padding:
@@ -763,6 +744,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                   fontSize: 12))),
                                       const SizedBox(height: 16)
                                     ],
+                                    // Question Text
                                     Stack(children: [
                                       ClayContainer(
                                           width: double.infinity,
@@ -797,6 +779,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                             .questionText))),
                                     ]),
                                     const SizedBox(height: 32),
+
+                                    // Options
                                     ...["A", "B", "C", "D"].map((optLabel) {
                                       String optText = "";
                                       String dbField = "";
@@ -847,6 +831,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                       optText)
                                                   : null));
                                     }),
+
+                                    // Explanation
                                     if (!isTestMode &&
                                         _isAnswered &&
                                         _showExplanation)
@@ -912,7 +898,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                                 "")))
                                         ]),
                                       ),
+
                                     const SizedBox(height: 16),
+                                    // Toolbar (Save, Share, Report)
                                     Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -934,10 +922,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                   style: TextStyle(
                                                       color: isBookmarked
                                                           ? Colors.orange
-                                                          : theme.subTextColor,
-                                                      fontWeight: isBookmarked
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal)),
+                                                          : theme
+                                                              .subTextColor)),
                                               onPressed: () {
                                                 ref.read(
                                                         toggleBookmarkProvider)(
@@ -945,15 +931,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                                 ref.refresh(
                                                     isBookmarkedProvider(
                                                         question.id));
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(SnackBar(
-                                                        content: Text(isBookmarked
-                                                            ? "Bookmark Removed"
-                                                            : "Bookmark Saved"),
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    600)));
                                               }),
                                           Container(
                                               height: 16,
@@ -1007,7 +984,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               ),
                             ),
 
-                            // FOOTER
+                            // FOOTER NAV
                             Padding(
                               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                               child: Row(
@@ -1093,8 +1070,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   }),
             ),
           ),
-
-          // 2. CONFETTI LAYER (Always Top)
           Positioned.fill(
             child: Align(
               alignment: Alignment.topCenter,
@@ -1120,9 +1095,62 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     );
   }
 
-  // --- HELPERS (Share, Report, Paywall, Result, OptionItem, Upsell, Stars) ---
-  // (Standard helper methods kept from previous version for brevity)
+  // --- 🟥 END OF QUIZ BUILDER ---
+  Widget _buildEndOfQuizState(
+      List<dynamic> questions,
+      AsyncValue<int> totalCountAsync,
+      bool isPro,
+      bool isTestMode,
+      dynamic theme) {
+    if (totalCountAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
+    final trueTotal = totalCountAsync.value ?? questions.length;
+    final hiddenQuestions = trueTotal - questions.length;
+
+    // A. SHOW PAYWALL
+    if (hiddenQuestions > 0 && !isPro && !isTestMode) {
+      return _buildPaywallView(theme, hiddenQuestions);
+    }
+
+    // B. FINISH QUIZ (Auto-Submit)
+    if (!_isSubmitted && !isTestMode) {
+      Future.microtask(() => _submitTest(questions));
+    }
+
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _buildPaywallView(dynamic theme, int lockedCount) {
+    return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.lock_rounded, size: 60, color: theme.accentColor),
+          const SizedBox(height: 20),
+          Text("Chapter Limit Reached",
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: theme.textColor)),
+          const SizedBox(height: 12),
+          Text(
+              "You have finished the free questions.\nUnlock $lockedCount more questions in this chapter with Pro.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: theme.subTextColor, fontSize: 16, height: 1.5)),
+          const SizedBox(height: 40),
+          QuizUpsellCard(
+              theme: theme, lockedCount: lockedCount, paymentUrl: _paymentUrl),
+          const SizedBox(height: 30),
+          TextButton(
+              onPressed: () => context.pop(),
+              child: Text("Maybe Later",
+                  style: TextStyle(color: theme.subTextColor)))
+        ]));
+  }
+
+  // --- HELPERS (Share, Report, Result, OptionItem, Upsell, Stars) ---
   Path drawStar(Size size) {
     double degToRad(double deg) => deg * (pi / 180.0);
     const numberOfPoints = 5;
@@ -1144,99 +1172,198 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return path;
   }
 
+  // --- 📸 NEW HIGH QUALITY SCREENSHOT GENERATOR ---
   Future<void> _shareQuestionImage(dynamic question, dynamic theme) async {
     setState(() => _isSharing = true);
     try {
       final Uint8List imageBytes =
           await _screenshotController.captureFromWidget(
-              MediaQuery(
-                  data: const MediaQueryData(),
-                  child: MaterialApp(
-                      debugShowCheckedModeBanner: false,
-                      home: Material(
-                          child: Container(
-                              color: const Color(0xFFFAFAFA),
-                              padding: const EdgeInsets.all(32),
-                              width: 400,
-                              child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Center(
-                                        child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 8),
-                                            decoration: BoxDecoration(
-                                                color: const Color(0xFF6C63FF),
-                                                borderRadius:
-                                                    BorderRadius.circular(20)),
-                                            child: const Text("Adhinasth App",
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16)))),
-                                    const SizedBox(height: 32),
-                                    Text(question.questionText,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.w900,
-                                            color: Colors.black87,
-                                            fontFamily: 'sans-serif')),
-                                    const SizedBox(height: 40),
-                                    _buildShareOption("A", question.optionA),
-                                    _buildShareOption("B", question.optionB),
-                                    _buildShareOption("C", question.optionC),
-                                    _buildShareOption("D", question.optionD)
-                                  ]))))),
-              delay: const Duration(milliseconds: 150),
-              pixelRatio: 2.0);
+        MediaQuery(
+          data: const MediaQueryData(),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Material(
+              child: Container(
+                width: 500, // Fixed width for consistent output
+                decoration: const BoxDecoration(
+                  // 🔥 Premium Gradient Background
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF2E3192),
+                      Color(0xFF1BFFFF)
+                    ], // Deep Blue -> Cyan
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Background Pattern
+                    Positioned(
+                      top: -50,
+                      right: -50,
+                      child: Icon(Icons.school,
+                          size: 300, color: Colors.white.withOpacity(0.05)),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 🏆 Branding Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: const Icon(Icons.school_rounded,
+                                    color: Color(0xFF2E3192), size: 32),
+                              ),
+                              const SizedBox(width: 14),
+                              Text("UP Special",
+                                  style: GoogleFonts.blackOpsOne(
+                                      fontSize: 32,
+                                      color: Colors.white,
+                                      letterSpacing: 1.5)),
+                            ],
+                          ),
+                          const SizedBox(height: 30),
+
+                          // 🃏 The Question Card
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10))
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              children: [
+                                // Question Text
+                                Text(
+                                  question.questionText,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2D3436),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                const Divider(height: 1),
+                                const SizedBox(height: 24),
+
+                                // Options List
+                                _buildShareOption("A", question.optionA),
+                                _buildShareOption("B", question.optionB),
+                                _buildShareOption("C", question.optionC),
+                                _buildShareOption("D", question.optionD),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // 📢 Footer / Call to Action
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 14),
+                            decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(50),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.2))),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.download_rounded,
+                                    color: Colors.amber, size: 22),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                  child: Text(
+                                    "Download UP Special by Toped",
+                                    style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        delay: const Duration(milliseconds: 150),
+        pixelRatio: 3.0, // ⚡ 3.0x Quality (Crisp Text)
+      );
+
       final directory = await getTemporaryDirectory();
       final imagePath = await File(
               '${directory.path}/adhinasth_share_${DateTime.now().millisecondsSinceEpoch}.png')
           .create();
       await imagePath.writeAsBytes(imageBytes);
       await Share.shareXFiles([XFile(imagePath.path)],
-          text: 'Can you solve this?');
+          text: 'Can you solve this? 🧠 Download the app for UP Exam Prep!');
     } catch (e) {
       debugPrint("Share Error: $e");
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error generating image: $e")));
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }
   }
 
+  // --- STYLIZED OPTION FOR SCREENSHOT ---
   Widget _buildShareOption(String label, String text) {
     return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2))
-            ]),
-        child: Row(children: [
-          Text("$label.",
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey,
-                  fontSize: 16)),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F6FA), // Light grey fill
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: const Color(0xFF2E3192).withOpacity(0.1),
+            child: Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E3192),
+                    fontSize: 12)),
+          ),
           const SizedBox(width: 12),
           Expanded(
-              child: Text(text,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87)))
-        ]));
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showReportDialog(BuildContext context, int qId, dynamic theme) {
@@ -1377,31 +1504,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (_selectedOption == opt && opt != correct) return _OptionState.wrong;
     return _OptionState.neutral;
   }
-
-  Widget _buildPaywallView(dynamic theme, int lockedCount) {
-    return Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text("Free Questions Finished",
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: theme.textColor)),
-          const SizedBox(height: 12),
-          Text(
-              "There are more $lockedCount questions in this chapter. To attempt all questions with full explanations, buy pass for just ₹99.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: theme.subTextColor, fontSize: 16, height: 1.5)),
-          const SizedBox(height: 40),
-          QuizUpsellCard(theme: theme, lockedCount: lockedCount),
-          const SizedBox(height: 30),
-          TextButton(
-              onPressed: () => context.pop(),
-              child: Text("Go Back to Home",
-                  style: TextStyle(color: theme.subTextColor)))
-        ]));
-  }
 }
 
 class ScoreRow extends StatelessWidget {
@@ -1521,15 +1623,23 @@ class _OptionItem extends StatelessWidget {
 class QuizUpsellCard extends StatelessWidget {
   final dynamic theme;
   final int lockedCount;
-  const QuizUpsellCard({super.key, required this.theme, this.lockedCount = 20});
+  final String paymentUrl;
+  const QuizUpsellCard(
+      {super.key,
+      required this.theme,
+      this.lockedCount = 20,
+      required this.paymentUrl});
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: () => context.push('/subscription'),
+        onTap: () async {
+          if (!await launchUrl(Uri.parse(paymentUrl),
+              mode: LaunchMode.externalApplication)) {}
+        },
         child: ClayContainer(
             width: double.infinity,
             borderRadius: 24,
-            color: const Color(0xFF2D3436),
+            color: const Color(0xFF212121),
             parentColor: theme.bgGradient.first,
             emboss: false,
             spread: 4,
@@ -1537,8 +1647,8 @@ class QuizUpsellCard extends StatelessWidget {
               Positioned(
                   right: -20,
                   bottom: -20,
-                  child: Icon(Icons.lock_outline_rounded,
-                      size: 120, color: Colors.white.withOpacity(0.05))),
+                  child: Icon(Icons.workspace_premium_rounded,
+                      size: 120, color: Colors.amber.withOpacity(0.1))),
               Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Row(children: [
@@ -1546,27 +1656,35 @@ class QuizUpsellCard extends StatelessWidget {
                         height: 50,
                         width: 50,
                         decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.2),
-                            shape: BoxShape.circle),
-                        child: const Icon(Icons.lock_rounded,
-                            color: Colors.amber, size: 28)),
+                            gradient: const LinearGradient(
+                                colors: [Colors.amber, Colors.orange]),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.amber.withOpacity(0.4),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4))
+                            ]),
+                        child: const Icon(Icons.diamond_rounded,
+                            color: Colors.white, size: 28)),
                     const SizedBox(width: 16),
                     Expanded(
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                          Text("Unlock More Questions",
-                              style: GoogleFonts.outfit(
-                                  fontSize: 16,
+                          Text("Unlock Pro Access",
+                              style: GoogleFonts.inter(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
                           const SizedBox(height: 4),
-                          Text(
-                              "Upgrade to Pro to unlock $lockedCount more questions.",
+                          Text("Click to unlock all questions instantly.",
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.7)))
-                        ]))
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.8)))
+                        ])),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        color: Colors.white54, size: 16)
                   ]))
             ])));
   }

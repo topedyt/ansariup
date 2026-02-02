@@ -1,16 +1,18 @@
-import 'dart:ui'; // For blur
+import 'dart:async'; // For Timer
+import 'dart:ui';
+import 'dart:math'; // For Random
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb check
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ Ensure this is added
 
-import '../library_providers.dart'; // Ensure this points to your providers file
+import '../library_providers.dart';
 import '../../../../core/theme/clay_kit.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/mesh_background.dart';
 
-// Helper Provider to check Pro Status
 final isUserProProvider = FutureProvider<bool>((ref) async {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return false;
@@ -54,16 +56,24 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
   }
 
   Future<void> _onDiceTap() async {
-    // Navigate to Random Quiz Mode
-    // The backend handles Pro/Free logic automatically via chapterId: 0
     if (mounted) {
       context.push('/quiz/random');
     }
   }
 
+  // 🔗 SOCIAL LINKS
+  Future<void> _launchInsta() async {
+    const url = 'https://instagram.com/toped.official?igsh=bTgzb253a3ViOWho';
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+  }
+
+  Future<void> _launchYoutube() async {
+    const url = 'https://youtube.com/@TopEd_AS';
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Providers
     final dailyUpdateAsync = ref.watch(dailyUpdateProvider);
     final subjectsAsync = ref.watch(subjectsProvider);
     final theme = ref.watch(appThemeProvider);
@@ -94,16 +104,15 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                         children: [
                           Text("Hello, $userName",
                               style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: theme.textColor,
-                                  letterSpacing: -0.5)),
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.textColor)), // Simplified Font
                           const SizedBox(height: 4),
-                          Text("Let's grind.",
+                          Text("Let's Start Learning...",
                               style: TextStyle(
                                   color: theme.subTextColor,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600)),
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                       GestureDetector(
@@ -157,13 +166,13 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // ROW B: Daily Wisdom + Buttons (Glass)
+                      // ROW B: Wisdom + Buttons
                       SizedBox(
                         height: 170,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // --- DAILY WISDOM (Expanded) ---
+                            // --- DAILY WISDOM ---
                             Expanded(
                               child: dailyUpdateAsync.when(
                                 loading: () => const Center(
@@ -212,8 +221,6 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                                                 );
                                               }),
                                         ),
-
-                                        // Text Content
                                         Padding(
                                           padding: const EdgeInsets.all(20.0),
                                           child: Column(
@@ -248,7 +255,7 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                                                         color: Colors.white,
                                                         fontSize: 16,
                                                         fontWeight:
-                                                            FontWeight.w600,
+                                                            FontWeight.w500,
                                                         height: 1.4),
                                                   ),
                                                 ),
@@ -265,34 +272,24 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
 
                             const SizedBox(width: 16),
 
-                            // --- GLASS BUTTONS COLUMN ---
+                            // --- ACTION BUTTONS COLUMN ---
                             Column(
                               children: [
-                                // 1. SAVED BUTTON (Glass Teal)
+                                // 1. SAVED BUTTON (Theme Glass)
                                 Expanded(
                                   child: _GlassButton(
                                     onTap: () => context.push('/saved'),
-                                    // Use App Theme color (Teal/Blue)
-                                    baseColor: const Color.fromARGB(
-                                        255, 155, 208, 221),
+                                    baseColor:
+                                        theme.accentColor, // Matches app theme
                                     icon: Icons.bookmark_rounded,
                                     iconSize: 28,
                                   ),
                                 ),
+                                const SizedBox(height: 16),
 
-                                const SizedBox(height: 16), // Gap
-
-                                // 2. DICE BUTTON (Ruby Red Glass)
+                                // 2. ANIMATED RUBY DICE (Changing Faces)
                                 Expanded(
-                                  child: _GlassButton(
-                                    onTap: _onDiceTap,
-                                    // Deep Ludo Red
-                                    baseColor: const Color(0xFFD50000),
-                                    icon: Icons.casino_rounded,
-                                    iconSize:
-                                        32, // Slightly larger icon for emphasis
-                                    isDice: true, // Special styling
-                                  ),
+                                  child: _AnimatedRubyDice(onTap: _onDiceTap),
                                 ),
                               ],
                             )
@@ -308,10 +305,10 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                  child: Text("Your Subjects",
+                  child: Text("Subjects",
                       style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
                           color: theme.textColor)),
                 ),
               ),
@@ -378,7 +375,7 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                                     Text(subject.title,
                                         style: TextStyle(
                                             fontSize: 18,
-                                            fontWeight: FontWeight.w800,
+                                            fontWeight: FontWeight.w700,
                                             color: theme.textColor,
                                             height: 1.1),
                                         maxLines: 2,
@@ -407,7 +404,43 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // 5. SOCIAL MEDIA FOOTER (Updated Text + FontAwesome)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 40),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Join the Community", // Simple, professional text
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: theme.subTextColor),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SocialButton(
+                            icon: FontAwesomeIcons.instagram, // Real Brand Icon
+                            color: const Color(0xFFE1306C), // Insta Color
+                            onTap: _launchInsta,
+                          ),
+                          const SizedBox(width: 20),
+                          _SocialButton(
+                            icon: FontAwesomeIcons.youtube, // Real Brand Icon
+                            color: const Color(0xFFFF0000), // YouTube Color
+                            onTap: _launchYoutube,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -431,19 +464,15 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
 
   _ColorSet _getSubjectColor(int id) {
     switch (id) {
-      // Pastel Blue
       case 1:
         return _ColorSet(const Color(0xFFB3E5FC), const Color(0xFF81D4FA),
             const Color(0xFF0277BD));
-      // Pastel Orange
       case 2:
         return _ColorSet(const Color(0xFFFFE0B2), const Color(0xFFFFCC80),
             const Color(0xFFEF6C00));
-      // Pastel Green
       case 3:
         return _ColorSet(const Color(0xFFC8E6C9), const Color(0xFFA5D6A7),
             const Color(0xFF2E7D32));
-      // Default
       default:
         return _ColorSet(
             const Color(0xFFF5F5F5), const Color(0xFFE0E0E0), Colors.black87);
@@ -451,20 +480,107 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen>
   }
 }
 
-// --- ✨ NEW: GLASSMORPHIC BUTTON COMPONENT ---
+// --- 🎲 NEW: ANIMATED RUBY DICE WIDGET ---
+class _AnimatedRubyDice extends StatefulWidget {
+  final VoidCallback onTap;
+  const _AnimatedRubyDice({required this.onTap});
+
+  @override
+  State<_AnimatedRubyDice> createState() => _AnimatedRubyDiceState();
+}
+
+class _AnimatedRubyDiceState extends State<_AnimatedRubyDice> {
+  late Timer _timer;
+  // List of FontAwesome Dice faces
+  final List<IconData> _faces = [
+    FontAwesomeIcons.diceOne,
+    FontAwesomeIcons.diceTwo,
+    FontAwesomeIcons.diceThree,
+    FontAwesomeIcons.diceFour,
+    FontAwesomeIcons.diceFive,
+    FontAwesomeIcons.diceSix,
+  ];
+  int _currentFaceIndex = 4; // Start with 5
+
+  @override
+  void initState() {
+    super.initState();
+    // Change face every 2 seconds to make it look alive but not crazy
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentFaceIndex = Random().nextInt(_faces.length);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        width: 77,
+        decoration: BoxDecoration(
+          color: const Color(0xFFA30000), // Deep Ruby Red Base
+          borderRadius: BorderRadius.circular(20),
+          // 1. Drop Shadow
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              offset: const Offset(0, 4),
+              blurRadius: 8,
+            ),
+          ],
+          // 2. 3D Gradient (Simulates Inner Shadow/Depth)
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEF5350), // Highlight (Top Left)
+              Color(0xFFB71C1C), // Mid
+              Color(0xFF5D0000), // Shadow (Bottom Right)
+            ],
+            stops: [0.1, 0.5, 0.9],
+          ),
+          // 3. Shiny Edge
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: Center(
+          // Animated Switcher for smooth transition between numbers
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, anim) =>
+                ScaleTransition(scale: anim, child: child),
+            child: Icon(_faces[_currentFaceIndex],
+                key: ValueKey<int>(_currentFaceIndex),
+                size: 32,
+                color: Colors.white.withOpacity(0.9)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- GLASS BUTTON (THEME MATCHED) ---
 class _GlassButton extends StatelessWidget {
   final VoidCallback onTap;
   final Color baseColor;
   final IconData icon;
   final double iconSize;
-  final bool isDice;
 
   const _GlassButton({
     required this.onTap,
     required this.baseColor,
     required this.icon,
     required this.iconSize,
-    this.isDice = false,
   });
 
   @override
@@ -472,24 +588,21 @@ class _GlassButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 77, // Fixed width for square aspect ratio
+        width: 77,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: baseColor.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+              color: baseColor.withOpacity(0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        // Use ClipRRect to contain the BackdropFilter (Blur)
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // 1. BLUR BACKDROP (Web Safe check included in logic via kIsWeb if needed,
-              // but standard BackdropFilter is okay if configured properly)
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
@@ -504,31 +617,12 @@ class _GlassButton extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withOpacity(0.2),
                       width: 1.5,
                     ),
                   ),
                   child: Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Shine effect for Dice
-                        if (isDice)
-                          Positioned(
-                            top: 10,
-                            left: 10,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.4),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        Icon(icon, size: iconSize, color: Colors.white),
-                      ],
-                    ),
+                    child: Icon(icon, size: iconSize, color: Colors.white),
                   ),
                 ),
               ),
@@ -540,7 +634,35 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
-// Stats Helper
+// --- SOCIAL BUTTON (FONT AWESOME) ---
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SocialButton(
+      {required this.icon, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 50, width: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        ),
+        child: Center(
+            child: FaIcon(icon,
+                color: color, size: 24)), // Use FaIcon for FontAwesome
+      ),
+    );
+  }
+}
+
+// Stats Helper (Bento Tile)
 class _BentoStatTile extends StatelessWidget {
   final String label;
   final AsyncValue<dynamic> valueAsync;
@@ -593,7 +715,7 @@ class _BentoStatTile extends StatelessWidget {
                       return Text("$prefix$val$suffix",
                           style: TextStyle(
                               fontSize: 20,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               color: theme.textColor));
                     },
                     loading: () => SizedBox(
@@ -604,7 +726,7 @@ class _BentoStatTile extends StatelessWidget {
                     error: (_, __) => Text("-",
                         style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             color: theme.textColor)),
                   ),
                 ]),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// CHANGE THIS IMPORT to match your project name if needed, 
+// CHANGE THIS IMPORT to match your project name if needed,
 // but relative import usually works:
-import 'package:UP_Special/main.dart'; 
+import 'package:up_special/main.dart';
 
 void main() {
   testWidgets('App renders smoke test', (WidgetTester tester) async {

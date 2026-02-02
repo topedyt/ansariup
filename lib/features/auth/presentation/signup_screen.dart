@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart'; // ✅ Clean Fonts
 import 'package:slider_captcha/slider_captcha.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,10 +28,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isGoogleLoading = true);
-    final supabase = ref.read(supabaseProvider); // Get Supabase client
+    final supabase = ref.read(supabaseProvider);
 
     try {
-      const webClientId = '1070502078318-c6fldur504bkhd116ic72ru5fud0lube.apps.googleusercontent.com';
+      // ⚠️ Use your REAL Client ID here (same as Login Screen)
+      const webClientId =
+          '1070502078318-c6fldur504bkhd116ic72ru5fud0lube.apps.googleusercontent.com';
       const iosClientId = 'YOUR-IOS-CLIENT-ID.apps.googleusercontent.com';
 
       final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -49,7 +51,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
       if (idToken == null) throw 'No ID Token found.';
 
-      // Use the provider-fetched client
       await supabase.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
@@ -60,7 +61,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign Up Failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Sign Up Failed: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -83,30 +85,38 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       builder: (context) {
         return Dialog(
           backgroundColor: const Color(0xFF2D3436),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Security Check", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Security Check",
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18)),
                 const SizedBox(height: 10),
-                const Text("Slide to verify you are human", style: TextStyle(color: Colors.white70)),
+                Text("Slide to verify you are human",
+                    style: GoogleFonts.inter(color: Colors.white70)),
                 const SizedBox(height: 20),
                 SizedBox(
                   height: 200,
                   child: SliderCaptcha(
                     controller: SliderController(),
                     image: Container(
-                       color: Colors.blueGrey,
-                       child: const Center(child: Icon(Icons.security, size: 64, color: Colors.white24)),
+                      color: Colors.blueGrey,
+                      child: const Center(
+                          child: Icon(Icons.security,
+                              size: 64, color: Colors.white24)),
                     ),
                     colorBar: const Color(0xFF2D3436),
                     colorCaptChar: Colors.blueAccent,
                     onConfirm: (bool value) async {
                       if (value) {
-                        Navigator.of(context).pop(); 
-                        await _handleSignup(); 
+                        Navigator.of(context).pop();
+                        await _handleSignup();
                       }
                     },
                   ),
@@ -145,7 +155,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void _showOtpInput(String email) {
     final otpController = TextEditingController();
     bool isVerifying = false;
-    final supabase = ref.read(supabaseProvider); // Get Supabase client
+    final supabase = ref.read(supabaseProvider);
 
     showDialog(
       context: context,
@@ -154,20 +164,41 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return StatefulBuilder(builder: (context, setDialogState) {
           return AlertDialog(
             backgroundColor: const Color(0xFF2D3436),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: const Text("Enter Code", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Text("Enter Code",
+                style: GoogleFonts.inter(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("We sent a 6-digit code to\n$email", textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                Text("We sent a 6-digit code to\n$email",
+                    textAlign: TextAlign.center,
+                    style:
+                        GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
                 const SizedBox(height: 20),
-                // ... (rest of the UI is the same)
+                TextField(
+                  controller: otpController,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                      color: Colors.white, fontSize: 24, letterSpacing: 5),
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: InputDecoration(
+                    counterText: "",
+                    filled: true,
+                    fillColor: Colors.black26,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
               ],
             ),
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("Cancel")),
+                  child: Text("Cancel", style: GoogleFonts.inter())),
               TextButton(
                 onPressed: isVerifying
                     ? null
@@ -176,7 +207,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         setDialogState(() => isVerifying = true);
 
                         try {
-                          // Use the provider-fetched client
                           final response = await supabase.auth.verifyOTP(
                             token: otpController.text.trim(),
                             type: OtpType.signup,
@@ -186,24 +216,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           if (response.session != null) {
                             Navigator.of(context).pop();
                             if (mounted) {
-                               context.go('/');
-                               ScaffoldMessenger.of(this.context).showSnackBar(
-                                   const SnackBar(content: Text("Welcome to Adhinasth!"))
-                               );
+                              context.go('/');
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text("Welcome to Adhinasth!")));
                             }
                           }
                         } catch (e) {
                           if (context.mounted) {
-                             setDialogState(() => isVerifying = false);
-                             ScaffoldMessenger.of(this.context).showSnackBar(
-                                 const SnackBar(content: Text("Invalid Code"), backgroundColor: Colors.red)
-                             );
+                            setDialogState(() => isVerifying = false);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Invalid Code"),
+                                    backgroundColor: Colors.red));
                           }
                         }
                       },
                 child: isVerifying
-                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text("VERIFY", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text("VERIFY",
+                        style: GoogleFonts.inter(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -214,7 +251,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (the build method remains the same)
     final theme = ref.watch(appThemeProvider);
 
     return Scaffold(
@@ -239,19 +275,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         color: theme.cardColor,
                         parentColor: theme.bgGradient.first,
                         emboss: false,
-                        child: Icon(Icons.arrow_back_rounded, color: theme.subTextColor),
+                        child: Icon(Icons.arrow_back_rounded,
+                            color: theme.subTextColor),
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
                   Text("Create Account",
-                      style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                      style: GoogleFonts.inter(
+                          fontSize: 30, // Clean size
+                          fontWeight: FontWeight.w600, // Clean weight
                           color: theme.textColor)),
                   const SizedBox(height: 8),
                   Text("Sign up to start learning.",
-                      style: TextStyle(color: theme.subTextColor, fontSize: 16)),
+                      style: GoogleFonts.inter(
+                          color: theme.subTextColor, fontSize: 16)),
                   const SizedBox(height: 40),
                   _ClayTextField(
                       controller: _nameController,
@@ -290,8 +328,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 width: 24,
                                 child: CircularProgressIndicator(
                                     color: Colors.white, strokeWidth: 2.5))
-                            : const Text("Sign Up",
-                                style: TextStyle(
+                            : Text("Sign Up",
+                                style: GoogleFonts.inter(
+                                    // Clean Font
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16)),
@@ -303,16 +342,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      Expanded(child: Divider(color: theme.subTextColor.withOpacity(0.2))),
+                      Expanded(
+                          child: Divider(
+                              color: theme.subTextColor.withOpacity(0.2))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text("OR", style: TextStyle(color: theme.subTextColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                        child: Text("OR",
+                            style: GoogleFonts.inter(
+                                color: theme.subTextColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)),
                       ),
-                      Expanded(child: Divider(color: theme.subTextColor.withOpacity(0.2))),
+                      Expanded(
+                          child: Divider(
+                              color: theme.subTextColor.withOpacity(0.2))),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   GestureDetector(
                     onTap: _isGoogleLoading ? null : _handleGoogleSignIn,
                     child: ClayContainer(
@@ -323,23 +370,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       parentColor: theme.bgGradient.first,
                       emboss: _isGoogleLoading,
                       child: Center(
-                         child: _isGoogleLoading 
-                           ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                           : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.g_mobiledata_rounded, size: 36, color: Colors.redAccent),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Continue with Google",
-                                style: TextStyle(
-                                  color: theme.textColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                        child: _isGoogleLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // ✅ REAL GOOGLE LOGO
+                                  Image.network(
+                                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
+                                    height: 24,
+                                    width: 24,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(Icons.public,
+                                                color: Colors.blue),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Continue with Google",
+                                    style: GoogleFonts.inter(
+                                      // Clean Font
+                                      color: theme.textColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
                       ),
                     ),
                   ),
@@ -350,11 +411,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: RichText(
                       text: TextSpan(
                         text: "Already have an account? ",
-                        style: TextStyle(color: theme.subTextColor),
+                        style: GoogleFonts.inter(color: theme.subTextColor),
                         children: [
                           TextSpan(
                               text: "Log In",
-                              style: TextStyle(
+                              style: GoogleFonts.inter(
                                   color: theme.accentColor,
                                   fontWeight: FontWeight.bold))
                         ],
@@ -370,8 +431,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 }
-
-
 
 class _ClayTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -401,11 +460,14 @@ class _ClayTextField extends StatelessWidget {
         child: TextField(
           controller: controller,
           obscureText: isPassword,
-          style: TextStyle(color: theme.textColor, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(
+              color: theme.textColor,
+              fontWeight: FontWeight.w600), // Clean Font
           decoration: InputDecoration(
             icon: Icon(icon, color: theme.subTextColor, size: 20),
             hintText: hint,
-            hintStyle: TextStyle(color: theme.subTextColor.withOpacity(0.5)),
+            hintStyle:
+                GoogleFonts.inter(color: theme.subTextColor.withOpacity(0.5)),
             border: InputBorder.none,
           ),
         ),
