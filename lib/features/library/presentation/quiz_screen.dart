@@ -218,22 +218,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             ));
   }
 
-  // --- ✨ HIGH QUALITY FEEDBACK CARDS (Restored Blur & Gradients) ---
+  // --- ✨ HIGH QUALITY FEEDBACK CARDS ---
   void _showCenterFeedback(bool isCorrect) {
-    // 🔥 Restored the "Dope" Deep Gradients
     final Color mainColor =
         isCorrect ? const Color(0xFF00E676) : const Color(0xFFFF1744);
 
-    // Richer, deeper gradients for premium look
     final List<Color> bgGradient = isCorrect
         ? [
             const Color(0xFF00C853).withOpacity(0.9),
             const Color(0xFF1B5E20).withOpacity(0.95)
-          ] // Bright Green -> Deep Forest
+          ]
         : [
             const Color(0xFFFF1744).withOpacity(0.9),
             const Color(0xFFB71C1C).withOpacity(0.95)
-          ]; // Bright Red -> Deep Crimson
+          ];
 
     final IconData icon =
         isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded;
@@ -242,14 +240,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black12, // Subtle background dim
+      barrierColor: Colors.black12,
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (context, anim, secondaryAnim, child) {
         final curvedValue = Curves.elasticOut.transform(anim.value);
         final scale = curvedValue.clamp(0.0, 1.2);
 
-        // 💎 The High Quality Card
         Widget cardContent = Container(
           width: 260,
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
@@ -260,8 +257,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 colors: bgGradient),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.5), // Glass border
+                color: Colors.white.withOpacity(0.2), width: 1.5),
             boxShadow: [
               BoxShadow(
                   color: mainColor.withOpacity(0.5),
@@ -273,7 +269,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Glowing Icon Background
               Container(
                 decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
                   BoxShadow(
@@ -315,7 +310,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ),
         );
 
-        // 💎 Apply Blur Effect (BackdropFilter) for Glassmorphism
         if (!kIsWeb) {
           cardContent = ClipRRect(
             borderRadius: BorderRadius.circular(30),
@@ -383,7 +377,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: "Milestone",
-      barrierColor: Colors.black.withOpacity(0.7), // Cinematic dim
+      barrierColor: Colors.black.withOpacity(0.7),
       transitionDuration: const Duration(milliseconds: 600),
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (context, anim, secondaryAnim, child) {
@@ -429,8 +423,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               const SizedBox(height: 24),
               Text(title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.blackOpsOne(
+                  style: GoogleFonts.inter(
+                      // ✅ Replaced BlackOps with Inter
                       fontSize: 40,
+                      fontWeight: FontWeight.w900, // Extra Bold
                       color: Colors.white,
                       decoration: TextDecoration.none,
                       letterSpacing: 2,
@@ -460,7 +456,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ),
         );
 
-        // 💎 Apply Blur for Milestone
         if (!kIsWeb) {
           cardContent = ClipRRect(
             borderRadius: BorderRadius.circular(30),
@@ -478,7 +473,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
-                // Glow effect behind
                 Container(
                   width: 300,
                   height: 300,
@@ -634,15 +628,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                             color: theme.subTextColor,
                                             size: 20)),
                                   ),
-                                  // 🏆 LOGO & BRANDING UPDATE
+                                  // 🏆 LOGO & BRANDING
                                   Row(children: [
                                     Image.asset('assets/icons/icon.png',
-                                        height:
-                                            28), // ✅ Replaced Icon with Image
+                                        height: 28),
                                     const SizedBox(width: 10),
-                                    Text("UP Special by Toped", // ✅ Full Text
+                                    Text("UP Special by Toped",
                                         style: GoogleFonts.inter(
-                                            // ✅ Bold Inter Font
                                             color: theme.textColor,
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold)),
@@ -900,7 +892,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                       ),
 
                                     const SizedBox(height: 16),
-                                    // Toolbar (Save, Share, Report)
+                                    // Toolbar
                                     Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -1172,7 +1164,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return path;
   }
 
-  // --- 📸 NEW HIGH QUALITY SCREENSHOT GENERATOR ---
+  // --- 📸 2.0 HIGH QUALITY SCREENSHOT GENERATOR (Glassbox Style) ---
   Future<void> _shareQuestionImage(dynamic question, dynamic theme) async {
     setState(() => _isSharing = true);
     try {
@@ -1184,26 +1176,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             debugShowCheckedModeBanner: false,
             home: Material(
               child: Container(
-                width: 500, // Fixed width for consistent output
+                width: 500, // Fixed width
                 decoration: const BoxDecoration(
-                  // 🔥 Premium Gradient Background
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       Color(0xFF2E3192),
-                      Color(0xFF1BFFFF)
+                      Color(0xFF00D4FF)
                     ], // Deep Blue -> Cyan
                   ),
                 ),
                 child: Stack(
                   children: [
-                    // Background Pattern
-                    Positioned(
-                      top: -50,
-                      right: -50,
-                      child: Icon(Icons.school,
-                          size: 300, color: Colors.white.withOpacity(0.05)),
+                    // 💧 WATERMARK IN BACKGROUND
+                    Positioned.fill(
+                      child: Center(
+                        child: Opacity(
+                          opacity: 0.1,
+                          child: Image.asset('assets/icons/icon.png',
+                              width: 300), // Watermark
+                        ),
+                      ),
                     ),
 
                     Padding(
@@ -1220,24 +1214,30 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(12)),
-                                child: const Icon(Icons.school_rounded,
-                                    color: Color(0xFF2E3192), size: 32),
+                                child: Image.asset('assets/icons/icon.png',
+                                    height: 32),
                               ),
                               const SizedBox(width: 14),
                               Text("UP Special",
-                                  style: GoogleFonts.blackOpsOne(
+                                  style: GoogleFonts.inter(
+                                      // ✅ Inter Font
                                       fontSize: 32,
+                                      fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                       letterSpacing: 1.5)),
                             ],
                           ),
                           const SizedBox(height: 30),
 
-                          // 🃏 The Question Card
+                          // 🃏 THE GLASSBOX CONTAINER
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Colors.white
+                                  .withOpacity(0.9), // Milky Glass
                               borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                  color: Colors.white,
+                                  width: 2), // Frost Border
                               boxShadow: [
                                 BoxShadow(
                                     color: Colors.black.withOpacity(0.3),
@@ -1260,7 +1260,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                const Divider(height: 1),
+                                const Divider(
+                                    height: 1, color: Colors.black12),
                                 const SizedBox(height: 24),
 
                                 // Options List
@@ -1530,6 +1531,7 @@ class ScoreRow extends StatelessWidget {
 
 enum _OptionState { neutral, selected, correct, wrong }
 
+// ✅ DARK MODE FIX FOR OPTIONS
 class _OptionItem extends StatelessWidget {
   final String label;
   final String text;
@@ -1546,24 +1548,34 @@ class _OptionItem extends StatelessWidget {
       this.onEdit});
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     Color baseColor = theme.cardColor;
     Color iconColor = theme.subTextColor.withOpacity(0.1);
     Color textColor = theme.textColor;
     bool isPressed = false;
+
     if (state == _OptionState.correct) {
-      baseColor = const Color(0xFFE8F5E9);
-      iconColor = Colors.green;
-      textColor = Colors.green[900]!;
+      // ✅ Dark Mode: Dark Green | Light Mode: Light Green
+      baseColor = isDark
+          ? const Color(0xFF1B5E20).withOpacity(0.5)
+          : const Color(0xFFE8F5E9);
+      iconColor = isDark ? Colors.greenAccent : Colors.green;
+      textColor = isDark ? Colors.greenAccent : Colors.green[900]!;
     } else if (state == _OptionState.wrong) {
-      baseColor = const Color(0xFFFFEBEE);
-      iconColor = Colors.red;
-      textColor = Colors.red[900]!;
+      // ✅ Dark Mode: Dark Red | Light Mode: Light Red
+      baseColor = isDark
+          ? const Color(0xFFB71C1C).withOpacity(0.5)
+          : const Color(0xFFFFEBEE);
+      iconColor = isDark ? Colors.redAccent : Colors.red;
+      textColor = isDark ? Colors.redAccent : Colors.red[900]!;
     } else if (state == _OptionState.selected) {
       isPressed = true;
       baseColor = theme.cardColor;
       iconColor = Colors.blue;
-      textColor = Colors.blue[900]!;
+      textColor = isDark ? Colors.blueAccent : Colors.blue[900]!;
     }
+
     return GestureDetector(
         onTap: onTap,
         child: Stack(children: [
@@ -1597,7 +1609,9 @@ class _OptionItem extends StatelessWidget {
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: state == _OptionState.selected
-                                            ? Colors.blue
+                                            ? (isDark
+                                                ? Colors.blueAccent
+                                                : Colors.blue)
                                             : theme.subTextColor))),
                         const SizedBox(width: 16),
                         Expanded(

@@ -123,12 +123,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(50),
-                        child: Image.asset(
-                          'assets/icons/icon.png', 
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.lock_person_rounded, size: 40, color: theme.accentColor);
-                          },
+                        // 🔍 ZOOM FIX: Scale up to remove internal padding
+                        child: Transform.scale(
+                          scale: 1.3, // Zoom level (1.4 fills the 70% content to ~100%)
+                          child: Image.asset(
+                            'assets/icons/icon.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.lock_person_rounded,
+                                  size: 40, color: theme.accentColor);
+                            },
+                          ),
                         ),
                       ),
                     ),
