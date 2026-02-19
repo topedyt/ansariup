@@ -57,14 +57,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     },
     {
       'title': 'Half Yearly',
-      'price': '₹99',
+      'price': '₹149',
       'duration': '6 Months',
       'db_key': 'qr_half_yearly',
       'color': Colors.orangeAccent
     },
     {
       'title': 'Yearly',
-      'price': '₹149',
+      'price': '₹249',
       'duration': '1 Year',
       'db_key': 'qr_yearly',
       'color': Colors.green

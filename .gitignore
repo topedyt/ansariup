@@ -47,3 +47,6 @@ build/
 *.aab
 *.ipa
 *.base64
+.vercel
+.env*.local
+/usr/bin/bash: line 4: /upload-keystore.jks: No such file or directory

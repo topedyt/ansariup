@@ -239,7 +239,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     showGeneralDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // 🛑 FIX: User cannot close this manually
       barrierColor: Colors.black12,
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (_, __, ___) => const SizedBox(),
@@ -375,7 +375,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     showGeneralDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false, // 🛑 FIX: User cannot close this manually
       barrierLabel: "Milestone",
       barrierColor: Colors.black.withOpacity(0.7),
       transitionDuration: const Duration(milliseconds: 600),
@@ -424,7 +424,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               Text(title,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      // ✅ Replaced BlackOps with Inter
                       fontSize: 40,
                       fontWeight: FontWeight.w900, // Extra Bold
                       color: Colors.white,
@@ -981,31 +980,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                               child: Row(
                                 children: [
-                                  GestureDetector(
-                                    onTap: _currentIndex > 0
-                                        ? () {
-                                            setState(() {
-                                              _currentIndex--;
-                                              if (!isTestMode) {
-                                                _isAnswered = false;
-                                                _selectedOption = null;
-                                                _showExplanation = false;
-                                              }
-                                            });
-                                          }
-                                        : null,
+                                  // 🔒 DISABLED BACK BUTTON to prevent XP Farming Loophole
+                                  Opacity(
+                                    opacity:
+                                        0.5, // Visually indicates disabled state
                                     child: ClayContainer(
                                         height: 56,
                                         width: 56,
                                         borderRadius: 16,
-                                        color: _currentIndex > 0
-                                            ? theme.cardColor
-                                            : theme.cardColor.withOpacity(0.5),
+                                        color: theme.cardColor,
                                         emboss: false,
                                         child: Icon(Icons.arrow_back_rounded,
-                                            color: _currentIndex > 0
-                                                ? theme.textColor
-                                                : theme.subTextColor)),
+                                            color: theme.subTextColor)),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
@@ -1253,8 +1239,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   question.questionText,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18, // ⚡ Updated: Same size as options
+                                    fontWeight: FontWeight.w400, // ⚡ Updated: No Bold
                                     color: const Color(0xFF2D3436),
                                     height: 1.4,
                                   ),

@@ -1,10 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:io'; // Needed for File on Mobile
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart'; // Ensure image_picker is in pubspec.yaml
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -98,7 +98,8 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
               const Center(child: CircularProgressIndicator())
             else ...[
               _buildQrOption("Monthly Plan (₹49)", "qr_monthly", Colors.blue),
-              _buildQrOption("Half-Yearly Plan (₹99)", "qr_half_yearly", Colors.orange),
+              _buildQrOption(
+                  "Half-Yearly Plan (₹99)", "qr_half_yearly", Colors.orange),
               _buildQrOption("Yearly Plan (₹149)", "qr_yearly", Colors.green),
             ]
           ],
@@ -109,7 +110,9 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
 
   Widget _buildQrOption(String title, String key, Color color) {
     return ListTile(
-      leading: CircleAvatar(backgroundColor: color.withOpacity(0.2), child: Icon(Icons.qr_code, color: color)),
+      leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.2),
+          child: Icon(Icons.qr_code, color: color)),
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
       trailing: const Icon(Icons.upload_file, color: Colors.grey),
       onTap: () {
@@ -134,29 +137,107 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
         ref.refresh(pendingPaymentsProvider); // Remove from list
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
   }
 
-  // --- APPROVE LOGIC ---
-  Future<void> _approveUser(int reqId, String userId) async {
+  // --- NEW: APPROVE LOGIC WITH CHOICE DIALOG ---
+  Future<void> _showApprovalDialog(
+      int reqId, String currentPlan, String email) async {
+    // Default to the user's requested plan
+    String selectedPlan = currentPlan;
+
+    // Normalize plan name just in case
+    if (!['Monthly', 'Half Yearly', 'Yearly'].contains(selectedPlan)) {
+      if (selectedPlan.contains('Yearly')) {
+        selectedPlan = 'Yearly';
+      } else if (selectedPlan.contains('Half')) {
+        selectedPlan = 'Half Yearly';
+      } else {
+        selectedPlan = 'Monthly';
+      }
+    }
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Approve Subscription"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("User: $email",
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 20),
+              const Text("Select Duration to Grant:",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+
+              // Plan Selection Chips
+              Wrap(
+                spacing: 8,
+                children: ['Monthly', 'Half Yearly', 'Yearly'].map((plan) {
+                  final isSelected = selectedPlan == plan;
+                  return ChoiceChip(
+                    label: Text(plan),
+                    selected: isSelected,
+                    selectedColor: Colors.green.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                        color: isSelected ? Colors.green[800] : Colors.black,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal),
+                    onSelected: (bool selected) {
+                      if (selected) {
+                        setDialogState(() => selectedPlan = plan);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child:
+                    const Text("Cancel", style: TextStyle(color: Colors.grey))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green, foregroundColor: Colors.white),
+              onPressed: () async {
+                Navigator.pop(ctx); // Close dialog
+                await _processApproval(reqId, selectedPlan);
+              },
+              child: const Text("CONFIRM & APPROVE"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processApproval(int reqId, String finalPlan) async {
     try {
-      await Supabase.instance.client.rpc('approve_payment_secure', params: {
-        'request_id': reqId,
-        'target_user_id': userId,
-      });
+      // Update plan_selected (in case admin changed it) AND status
+      // The DB Trigger will detect 'status'='approved' and use 'plan_selected'
+      // to calculate expiry date.
+      await Supabase.instance.client.from('payment_requests').update(
+          {'plan_selected': finalPlan, 'status': 'approved'}).eq('id', reqId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("User Upgraded Successfully! ✅"),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("Approved as $finalPlan! ✅"),
             backgroundColor: Colors.green));
         ref.refresh(pendingPaymentsProvider);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Approval Failed: $e"), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
       }
     }
   }
@@ -167,11 +248,12 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Verifications", style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text("Verifications",
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
-          // THE NEW QR MANAGER BUTTON
+          // THE QR MANAGER BUTTON
           IconButton(
             onPressed: _showQrManager,
             icon: const Icon(Icons.qr_code_scanner),
@@ -188,9 +270,12 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.check_circle_outline, size: 60, color: Colors.green),
+                  const Icon(Icons.check_circle_outline,
+                      size: 60, color: Colors.green),
                   const SizedBox(height: 16),
-                  Text("All caught up!", style: GoogleFonts.inter(fontSize: 18, color: Colors.grey)),
+                  Text("All caught up!",
+                      style:
+                          GoogleFonts.inter(fontSize: 18, color: Colors.grey)),
                 ],
               ),
             );
@@ -202,22 +287,34 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
             itemBuilder: (context, index) {
               final req = requests[index];
               final email = req['user_email'] ?? 'Unknown Email';
-              final userId = req['user_id'];
               final reqId = req['id'];
               final imagePath = req['screenshot_path'];
+
               // Fetch the plan name from DB (or default to Unknown)
-              final planName = req['plan_selected'] ?? 'Unknown Plan'; 
-              final date = DateTime.parse(req['created_at']).toLocal();
+              final planName = req['plan_selected'] ?? 'Unknown Plan';
+
+              // Parse date safely
+              DateTime date;
+              try {
+                date = DateTime.parse(req['created_at']).toLocal();
+              } catch (e) {
+                date = DateTime.now();
+              }
 
               // Determine visual color based on plan
               Color planColor = Colors.blue;
-              if (planName.toString().contains('Yearly')) planColor = Colors.green;
-              if (planName.toString().contains('Half')) planColor = Colors.orange;
+              if (planName.toString().contains('Yearly')) {
+                planColor = Colors.green;
+              }
+              if (planName.toString().contains('Half')) {
+                planColor = Colors.orange;
+              }
 
               return Card(
                 elevation: 3,
                 margin: const EdgeInsets.only(bottom: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -231,43 +328,74 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(email, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text(email,
+                                    style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
                                 Text(DateFormat('dd MMM, hh:mm a').format(date),
-                                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)),
+                                    style: GoogleFonts.inter(
+                                        color: Colors.grey, fontSize: 12)),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: planColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: planColor.withOpacity(0.3))
-                            ),
-                            child: Text(planName, 
-                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: planColor, fontSize: 12)),
+                                color: planColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: planColor.withOpacity(0.3))),
+                            child: Text(planName,
+                                style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    color: planColor,
+                                    fontSize: 12)),
                           )
                         ],
                       ),
-                      
+
                       const Divider(height: 24),
-                      Text("Payment Proof:", style: GoogleFonts.inter(color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                      Text("Payment Proof:",
+                          style: GoogleFonts.inter(
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
 
                       // Secure Image Preview
                       Consumer(builder: (ctx, ref, _) {
-                        final imageAsync = ref.watch(secureImageProvider(imagePath));
+                        if (imagePath == null || imagePath.isEmpty) {
+                          return Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.broken_image));
+                        }
+
+                        final imageAsync =
+                            ref.watch(secureImageProvider(imagePath));
                         return imageAsync.when(
-                          loading: () => Container(height: 200, color: Colors.grey[100], child: const Center(child: CircularProgressIndicator())),
-                          error: (_, __) => Container(height: 200, color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+                          loading: () => Container(
+                              height: 200,
+                              color: Colors.grey[100],
+                              child: const Center(
+                                  child: CircularProgressIndicator())),
+                          error: (_, __) => Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.broken_image)),
                           data: (signedUrl) => GestureDetector(
                             onTap: () => showDialog(
                               context: context,
-                              builder: (_) => Dialog(child: InteractiveViewer(child: Image.network(signedUrl))),
+                              builder: (_) => Dialog(
+                                  child: InteractiveViewer(
+                                      child: Image.network(signedUrl))),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.network(signedUrl, height: 250, width: double.infinity, fit: BoxFit.cover),
+                              child: Image.network(signedUrl,
+                                  height: 250,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover),
                             ),
                           ),
                         );
@@ -282,24 +410,28 @@ class _PaymentAdminScreenState extends ConsumerState<PaymentAdminScreen> {
                             child: OutlinedButton(
                               onPressed: () => _rejectUser(reqId),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.red),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                              ),
+                                  foregroundColor: Colors.red,
+                                  side: const BorderSide(color: Colors.red),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10))),
                               child: const Text("REJECT"),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _approveUser(reqId, userId),
+                              // CHANGED: Opens Dialog instead of instant approve
+                              onPressed: () =>
+                                  _showApprovalDialog(reqId, planName, email),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                              ),
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10))),
                               icon: const Icon(Icons.check_circle, size: 20),
                               label: const Text("APPROVE"),
                             ),
